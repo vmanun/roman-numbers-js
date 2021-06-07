@@ -8,6 +8,14 @@ const ARABIC_TO_ROMAN_MAPPING = {
   1000: "M",
 };
 
+const ROMAN_TO_ARABIC_MAPPING = Object.entries(ARABIC_TO_ROMAN_MAPPING).reduce(
+  (accum, [arabic, roman]) => {
+    accum[roman] = parseInt(arabic);
+    return accum;
+  },
+  {}
+);
+
 const VALIDATION_REG_EXP = (() => {
   const GROUPED_MAPPING = (() => {
     const resultingMapping = [];
@@ -36,13 +44,83 @@ const VALIDATION_REG_EXP = (() => {
 })();
 
 /**
+ * @param {number} num
+ * @throws error if the given number is outside the specified max/min limits
+ */
+function throwIfGivenNumberExceedsMaxOrMinParsableValue(num) {
+  const maxParsableNumber = Roman.getMaxParsableNumber();
+  if (num > maxParsableNumber) {
+    throw new Error(
+      `The given number \`${num}\` exceeds the max parsable number \`${maxParsableNumber}\``
+    );
+  } else if (num < 1) {
+    throw new Error(
+      `The given number \`${num}\` goes below the min parsable number \`1\``
+    );
+  }
+}
+
+/**
+ * @param {number|string|Roman} someValue
+ * @returns {number} numeric value of `someValue`
+ */
+function getNumericValue(someValue = null) {
+  if (someValue === null) {
+    throw new Error(`Given value could not be parsed: \`${someValue}\``);
+  }
+
+  if (typeof someValue === "number") {
+    throwIfGivenNumberExceedsMaxOrMinParsableValue(someValue);
+    return someValue;
+  } else if (typeof someValue === "string") {
+    try {
+      if (Roman.isValidRoman(someValue)) return Roman.toNumber(someValue);
+      else {
+        const someIntValue = parseInt(someValue);
+        throwIfGivenNumberExceedsMaxOrMinParsableValue(someIntValue);
+        return someIntValue;
+      }
+    } catch (e) {
+      throw new Error(
+        `An error occurred when trying to parse numeric value from given string: ${e.message}`
+      );
+    }
+  } else if (Object.getPrototypeOf(someValue) === Roman.prototype)
+    return someValue.number;
+}
+
+/**
  * Object representing the value of a roman nomber
  * @param {number} num number to be parsed into a roman number. If left empty, it's value becomes `1`
  */
 class Roman {
   constructor(num = 1) {
-    this.number = num;
     this.romanNumber = Roman.parseRoman(num);
+    this.number = num;
+  }
+
+  /**
+   * @param {number} number
+   */
+  set number(number) {
+    this.__romanNumber = Roman.parseRoman(number);
+    this.__number = number;
+  }
+
+  /**
+   * @param {string} romanNumber
+   */
+  set romanNumber(romanNumber) {
+    this.__number = Roman.toNumber(romanNumber);
+    this.__romanNumber = romanNumber;
+  }
+
+  get number() {
+    return this.__number;
+  }
+
+  get romanNumber() {
+    return this.__romanNumber;
   }
 
   /**
@@ -71,12 +149,7 @@ class Roman {
    * @see Roman.getMaxParsableNumber
    */
   static parseRoman(num = 1) {
-    const maxParsableNumber = Roman.getMaxParsableNumber();
-    if (num > maxParsableNumber) {
-      throw new Error(
-        `The given number \`${num}\` exceeds the max parsable number \`${maxParsableNumber}\``
-      );
-    }
+    throwIfGivenNumberExceedsMaxOrMinParsableValue(num);
 
     const numCharArray = new Number(num).toString().split("");
 
@@ -144,15 +217,50 @@ class Roman {
         `The given string is not a valid roman number: \`${romanNumber}\``
       );
     }
+
+    return romanNumber
+      .toUpperCase()
+      .split("")
+      .reduce(
+        (accum, romanChar, index) =>
+          accum +
+          (index > 0 &&
+          ROMAN_TO_ARABIC_MAPPING[romanNumber[index - 1]] <
+            ROMAN_TO_ARABIC_MAPPING[romanChar]
+            ? ROMAN_TO_ARABIC_MAPPING[romanChar] -
+              ROMAN_TO_ARABIC_MAPPING[romanNumber[index - 1]] * 2
+            : ROMAN_TO_ARABIC_MAPPING[romanChar]),
+        0
+      );
   }
 
-  static add(a, b) {}
+  /**
+   * Add two of the given numbers together and create a new `Roman` instance with it
+   * @param {number|string|Roman} left left value of the addition
+   * @param {number|string|Roman} right right value of the addition
+   * @returns {Roman} Result of the sum of `left` and `right` as a new `Roman` instance
+   */
+  static add(left, right) {
+    return new Roman(getNumericValue(left) + getNumericValue(right));
+  }
 
-  static substract(a, b) {}
+  /**
+   * Substract two of the given numbers together and create a new `Roman` instance with it
+   * @param {number|string|Roman} left left value of the substraction
+   * @param {number|string|Roman} right right value of the substraction
+   * @returns {Roman} Result of the substraction of `left` and `right` as a new `Roman` instance
+   */
+  static substract(left, right) {
+    return new Roman(getNumericValue(left) - getNumericValue(right));
+  }
 
-  plus(b) {}
+  plus(right) {
+    this.number += getNumericValue(right);
+  }
 
-  minus(b) {}
+  minus(right) {
+    this.number -= getNumericValue(right);
+  }
 }
 
 module.exports = Roman;
