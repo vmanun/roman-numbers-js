@@ -95,11 +95,19 @@ function getNumericValue(someValue = null) {
  */
 class Roman {
   constructor(num = 1) {
-    this.romanNumber = Roman.parseRoman(num);
-    this.number = num;
+    /**
+     * @private
+     */
+    this.__romanNumber = Roman.parseRoman(num);
+
+    /**
+     * @private
+     */
+    this.__number = num;
   }
 
   /**
+   * Numeric value of the stored roman number. Changing this will automatically set the `romanNumber` property to the new given value
    * @param {number} number
    */
   set number(number) {
@@ -108,6 +116,7 @@ class Roman {
   }
 
   /**
+   * Roman number equivalent of the given value. Changing this will automatically set the `number` property to the new given value
    * @param {string} romanNumber
    */
   set romanNumber(romanNumber) {
@@ -143,12 +152,13 @@ class Roman {
 
   /**
    * Function that returns a new roman number string from a given number
-   * @param {number} num Number to be converted into roman.
+   * @param {number|string} num Number to be converted into roman.
    * @returns {string} String with the roman represention of the given number
    * @throws error whenever the given `num` exceeds the max parsable number
    * @see Roman.getMaxParsableNumber
    */
   static parseRoman(num = 1) {
+    num = getNumericValue(num);
     throwIfGivenNumberExceedsMaxOrMinParsableValue(num);
 
     const numCharArray = new Number(num).toString().split("");
@@ -254,10 +264,18 @@ class Roman {
     return new Roman(getNumericValue(left) - getNumericValue(right));
   }
 
+  /**
+   * Add a number to the current value stored in the `Roman` instance. Result is saved inside said instance.
+   * @param {number|string|Roman} right right value of the addition
+   */
   plus(right) {
     this.number += getNumericValue(right);
   }
 
+  /**
+   * Substract a number to the current value stored in the `Roman` instance. Result is saved inside said instance.
+   * @param {number|string|Roman} right right value of the substraction
+   */
   minus(right) {
     this.number -= getNumericValue(right);
   }
